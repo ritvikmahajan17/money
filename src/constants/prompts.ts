@@ -1,5 +1,4 @@
 export const GEMINI_PROMPTS = {
-    // Transaction analysis prompt for SMS messages
     TRANSACTION_ANALYSIS: (smsText: string) => `
 Analyze the following SMS message and determine if it's a financial transaction. 
 If it is a transaction, extract the relevant information and return a JSON response.

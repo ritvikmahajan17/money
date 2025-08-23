@@ -168,6 +168,19 @@ export const AppLogger = {
     debug: (message: string, meta?: Record<string, unknown>) => {
         logger.debug(message, meta);
     },
+
+    xlsDbError: (
+        operation: string,
+        error: Error,
+        meta?: Record<string, unknown>
+    ) => {
+        logger.error(`XlsDB ${operation} operation failed`, {
+            operation,
+            error: error.message,
+            stack: error.stack,
+            ...meta,
+        });
+    },
 };
 
 export default AppLogger;
