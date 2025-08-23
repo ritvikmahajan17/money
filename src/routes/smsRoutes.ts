@@ -46,10 +46,12 @@ router.post(
             });
         } catch (error) {
             AppLogger.requestError('POST', '/sms', error as Error);
-            return res.status(500).json({
-                status: 'error',
-                received_sms: 'Internal server error',
-            } as SmsResponse);
+
+            // return success response even on error
+            return res.json({
+                status: 'ok',
+                received_sms: 'error occured',
+            });
         }
     }
 );
