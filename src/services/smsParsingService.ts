@@ -85,7 +85,22 @@ class SmsParsingService {
                 confidence: transactionData.confidence,
             };
 
+            // Check for duplicates before saving
+            const isDuplicate = await this.checkForDuplicate(values);
+            if (isDuplicate) {
+                AppLogger.warn(
+                    'Duplicate transaction detected, skipping save to Excel',
+                    {
+                        vendor: values.vendor,
+                        amount: values.amount,
+                        transactionType: values.transactionType,
+                    }
+                );
+                return;
+            }
+
             await this.xlsDb.create({ values });
+
             AppLogger.info('Transaction saved to Excel successfully', {
                 vendor: values.vendor,
                 amount: values.amount,
@@ -98,6 +113,91 @@ class SmsParsingService {
                 { transactionData }
             );
             throw error;
+        }
+    }
+
+    private async checkForDuplicate(
+        newTransaction: Record<string, unknown>
+    ): Promise<boolean> {
+        try {
+            const { vendor, amount, transactionType } = newTransaction;
+
+            // If any of the required fields are missing, allow the transaction
+            if (!vendor || !amount || !transactionType) {
+                return false;
+            }
+
+            // Get current time and calculate 3-minute window
+            const now = new Date();
+            const threeMinutesAgo = new Date(now.getTime() - 3 * 60 * 1000);
+
+            // Search for existing transactions with same vendor, amount, and type
+            const existingTransactions = await this.xlsDb.findAll({
+                where: {
+                    vendor: vendor,
+                    amount: amount,
+                    transactionType: transactionType,
+                },
+            });
+
+            // Check if any existing transaction is within the 3-minute window
+            if (Array.isArray(existingTransactions)) {
+                for (const transaction of existingTransactions) {
+                    const transactionRecord = transaction as Record<
+                        string,
+                        unknown
+                    >;
+                    const transactionTime =
+                        transactionRecord['dateTime'] ||
+                        transactionRecord['timestamp'];
+
+                    if (transactionTime) {
+                        const transactionDate = new Date(
+                            transactionTime as string
+                        );
+
+                        // If transaction is within 3 minutes, it's a duplicate
+                        if (
+                            transactionDate >= threeMinutesAgo &&
+                            transactionDate <= now
+                        ) {
+                            AppLogger.info(
+                                'Duplicate transaction found within 3-minute window',
+                                {
+                                    existingTransaction: {
+                                        vendor: transactionRecord['vendor'],
+                                        amount: transactionRecord['amount'],
+                                        transactionType:
+                                            transactionRecord[
+                                                'transactionType'
+                                            ],
+                                        dateTime: transactionTime,
+                                    },
+                                    newTransaction: {
+                                        vendor,
+                                        amount,
+                                        transactionType,
+                                    },
+                                    timeDifference: `${Math.round((now.getTime() - transactionDate.getTime()) / 1000)}s`,
+                                }
+                            );
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        } catch (error) {
+            AppLogger.error(
+                'Error checking for duplicates, allowing transaction',
+                error as Error,
+                {
+                    newTransaction,
+                }
+            );
+            // If duplicate check fails, allow the transaction to proceed
+            return false;
         }
     }
 
