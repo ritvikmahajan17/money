@@ -53,7 +53,7 @@ export class XlsDB {
             });
         } else {
             AppLogger.info(
-                'XlsDB authentication credentials configured successfully'
+                `XlsDB authentication credentials configured successfully with spreadsheetId ${this.sheetId} and sheetName ${this.sheetName}`
             );
         }
     }
