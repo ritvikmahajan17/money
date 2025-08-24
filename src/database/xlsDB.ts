@@ -32,7 +32,8 @@ export class XlsDB {
     constructor({ sheetId, sheetName, clientEmail, privateKey }: XlsDBOptions) {
         const devURL = 'http://localhost:5050/xlsDB';
         const prodURL = 'https://xls-db.onrender.com/xlsDB';
-        this.isDev = process.env['NODE_ENV'] !== 'production';
+        this.isDev =
+            process.env['NODE_ENV']?.toLocaleLowerCase() !== 'production';
         console.log('isDev:', this.isDev);
         this.URL = this.isDev ? devURL : prodURL;
         this.sheetId = sheetId;
