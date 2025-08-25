@@ -28,6 +28,7 @@ Rules:
 7. If date/time is not in the SMS, use null
 8. Be conservative - if unsure, mark isTransaction as false
 9. Future transactions or pending transactions requests should not be marked as transactions. Only completed transactions should be marked as transactions.
+10. Sms text containing works like "will be", "going to", "scheduled", "upcoming", "pending", "to be", "authorize", "authorizing" and so on should not be marked as transactions.
 
 Return only the JSON response, no additional text.
   `,
