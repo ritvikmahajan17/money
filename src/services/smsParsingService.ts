@@ -94,9 +94,8 @@ class SmsParsingService {
                 AppLogger.warn(
                     'Duplicate transaction detected, skipping save to Excel',
                     {
-                        vendor: values.vendor,
                         amount: values.amount,
-                        transactionType: values.transactionType,
+                        timeWindow: `${Number(process.env['DUPLICATE_CHECK_WINDOW_MINUTES']) || 1} minute(s)`
                     }
                 );
                 return;
@@ -123,27 +122,26 @@ class SmsParsingService {
         newTransaction: Record<string, unknown>
     ): Promise<boolean> {
         try {
-            const { vendor, amount, transactionType } = newTransaction;
+            const { amount } = newTransaction;
 
-            // If any of the required fields are missing, allow the transaction
-            if (!vendor || !amount || !transactionType) {
+            // If amount is missing, allow the transaction
+            if (!amount) {
                 return false;
             }
 
-            // Get current time and calculate 3-minute window
+            // Get time window from environment variable (default to 60 seconds = 1 minute)
+            const timeWindowSeconds = Number(process.env['DUPLICATE_CHECK_WINDOW_SECONDS']) || 60;
             const now = new Date();
-            const threeMinutesAgo = new Date(now.getTime() - 3 * 60 * 1000);
+            const timeWindowAgo = new Date(now.getTime() - timeWindowSeconds * 1000);
 
-            // Search for existing transactions with same vendor, amount, and type
+            // Search for existing transactions with same amount only
             const existingTransactions = await this.xlsDb.findAll({
                 where: {
-                    vendor: vendor,
                     amount: amount,
-                    transactionType: transactionType,
                 },
             });
 
-            // Check if any existing transaction is within the 3-minute window
+            // Check if any existing transaction is within the time window
             if (Array.isArray(existingTransactions)) {
                 for (const transaction of existingTransactions) {
                     const transactionRecord = transaction as Record<
@@ -159,29 +157,23 @@ class SmsParsingService {
                             transactionTime as string
                         );
 
-                        // If transaction is within 3 minutes, it's a duplicate
+                        // If transaction is within the time window, it's a duplicate
                         if (
-                            transactionDate >= threeMinutesAgo &&
+                            transactionDate >= timeWindowAgo &&
                             transactionDate <= now
                         ) {
                             AppLogger.info(
-                                'Duplicate transaction found within 3-minute window',
+                                `Duplicate transaction found within ${timeWindowSeconds}-second window`,
                                 {
                                     existingTransaction: {
-                                        vendor: transactionRecord['vendor'],
                                         amount: transactionRecord['amount'],
-                                        transactionType:
-                                            transactionRecord[
-                                                'transactionType'
-                                            ],
                                         dateTime: transactionTime,
                                     },
                                     newTransaction: {
-                                        vendor,
                                         amount,
-                                        transactionType,
                                     },
                                     timeDifference: `${Math.round((now.getTime() - transactionDate.getTime()) / 1000)}s`,
+                                    timeWindowSeconds,
                                 }
                             );
                             return true;
