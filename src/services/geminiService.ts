@@ -24,7 +24,10 @@ class GeminiService {
         }
     }
 
-    async parseTransaction(smsText: string): Promise<TransactionData> {
+    async parseTransaction(
+        smsText: string,
+        from: string
+    ): Promise<TransactionData> {
         // Ensure API key is configured
         if (!this.model) {
             throw new Error(
@@ -33,7 +36,7 @@ class GeminiService {
         }
 
         try {
-            const prompt = GEMINI_PROMPTS.TRANSACTION_ANALYSIS(smsText);
+            const prompt = GEMINI_PROMPTS.TRANSACTION_ANALYSIS(smsText, from);
             const result = await this.model.generateContent(prompt);
             const response = await result.response;
             const text = response.text();

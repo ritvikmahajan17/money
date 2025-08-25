@@ -1,10 +1,11 @@
 export const GEMINI_PROMPTS = {
-    TRANSACTION_ANALYSIS: (smsText: string) => `
+    TRANSACTION_ANALYSIS: (smsText: string, sender: string) => `
 Analyze the following SMS message and determine if it's a completed financial transaction. 
 If it is a transaction, extract the relevant information and return a JSON response.
 If it's not a transaction, return isTransaction: false.
 
 SMS Text: "${smsText}"
+Sender: "${sender}"
 
 Please return a JSON response with the following structure:
 {
@@ -29,6 +30,7 @@ Rules:
 8. Be conservative - if unsure, mark isTransaction as false
 9. Future transactions or pending transactions requests should not be marked as transactions. Only completed transactions should be marked as transactions.
 10. Sms text containing works like "will be", "going to", "scheduled", "upcoming", "pending", "to be", "authorize", "authorizing" and so on should not be marked as transactions.
+11. Consider only sms that comes from banks and financial institutions.
 
 Return only the JSON response, no additional text.
   `,

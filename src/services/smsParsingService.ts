@@ -20,7 +20,10 @@ class SmsParsingService {
         AppLogger.smsReceived(sms, from, timestamp.toISOString());
 
         // Parse transaction data using Gemini AI
-        const transactionData = await geminiService.parseTransaction(sms);
+        const transactionData = await geminiService.parseTransaction(
+            sms,
+            from!
+        );
 
         // Log transaction analysis
         this.logTransactionAnalysis(transactionData);
