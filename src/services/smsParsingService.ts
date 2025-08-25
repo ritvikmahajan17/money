@@ -62,7 +62,10 @@ class SmsParsingService {
         };
     }
 
-    private logTransactionAnalysis(transactionData: TransactionData, smsId: string): void {
+    private logTransactionAnalysis(
+        transactionData: TransactionData,
+        smsId: string
+    ): void {
         if (transactionData.isTransaction) {
             AppLogger.info(`Transaction detected for ${smsId}`, {
                 smsId,
@@ -98,9 +101,12 @@ class SmsParsingService {
     ): Promise<void> {
         try {
             if (!transactionData.isTransaction) {
-                AppLogger.info(`Skipping non-transaction data for Excel save - ${smsId}`, {
-                    smsId,
-                });
+                AppLogger.info(
+                    `Skipping non-transaction data for Excel save - ${smsId}`,
+                    {
+                        smsId,
+                    }
+                );
                 return;
             }
 
@@ -122,7 +128,7 @@ class SmsParsingService {
                     {
                         smsId,
                         amount: values.amount,
-                        timeWindow: `${Number(process.env['DUPLICATE_CHECK_WINDOW_SECONDS']) || 60} second(s)`
+                        timeWindow: `${Number(process.env['DUPLICATE_CHECK_WINDOW_SECONDS']) || 60} second(s)`,
                     }
                 );
                 return;
@@ -130,12 +136,15 @@ class SmsParsingService {
 
             await this.xlsDb.create({ values });
 
-            AppLogger.info(`Transaction saved to Excel successfully - ${smsId}`, {
-                smsId,
-                vendor: values.vendor,
-                amount: values.amount,
-                category: values.category,
-            });
+            AppLogger.info(
+                `Transaction saved to Excel successfully - ${smsId}`,
+                {
+                    smsId,
+                    vendor: values.vendor,
+                    amount: values.amount,
+                    category: values.category,
+                }
+            );
         } catch (error) {
             AppLogger.error(
                 `Failed to save transaction to Excel - ${smsId}`,
@@ -158,9 +167,12 @@ class SmsParsingService {
             }
 
             // Get time window from environment variable (default to 60 seconds = 1 minute)
-            const timeWindowSeconds = Number(process.env['DUPLICATE_CHECK_WINDOW_SECONDS']) || 60;
+            const timeWindowSeconds =
+                Number(process.env['DUPLICATE_CHECK_WINDOW_SECONDS']) || 60;
             const now = new Date();
-            const timeWindowAgo = new Date(now.getTime() - timeWindowSeconds * 1000);
+            const timeWindowAgo = new Date(
+                now.getTime() - timeWindowSeconds * 1000
+            );
 
             // Search for existing transactions with same amount only
             const existingTransactions = await this.xlsDb.findAll({
