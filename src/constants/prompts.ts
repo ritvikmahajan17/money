@@ -22,7 +22,7 @@ Please return a JSON response with the following structure:
 Rules:
 1. Only mark as transaction if it clearly mentions money movement, payments, purchases, or account activity
 2. Extract amount as a number (remove currency symbols)
-3. Identify vendor/merchant names accurately
+3. Identify vendor/merchant names accurately. Take help from sender info if needed. Most likey the sms is coming from banks only.
 4. Categorize transactions appropriately
 5. Determine transaction type based on context (spent/debited = debit, received/credited = credit, etc.)
 6. Set confidence based on clarity of transaction indicators
