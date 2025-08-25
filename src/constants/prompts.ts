@@ -30,7 +30,7 @@ Rules:
 8. Be conservative - if unsure, mark isTransaction as false
 9. Future transactions or pending transactions requests should not be marked as transactions. Only completed transactions should be marked as transactions.
 10. Sms text containing works like "will be", "going to", "scheduled", "upcoming", "pending", "to be", "authorize", "authorizing" and so on should not be marked as transactions.
-11. Consider only sms that comes from banks and financial institutions.
+11. Consider only sms that comes from banks only.
 
 Return only the JSON response, no additional text.
   `,
