@@ -5,6 +5,7 @@ import { XlsDB } from '../database/xlsDB';
 
 class SmsParsingService {
     private xlsDb: XlsDB;
+    private static smsIdCounter = 0;
 
     constructor(xlsDb: XlsDB) {
         this.xlsDb = xlsDb;
@@ -12,11 +13,20 @@ class SmsParsingService {
     async parseSms(smsData: SmsData): Promise<ParsedSmsResult> {
         const { sms, from, when } = smsData;
 
+        // Generate unique SMS ID
+        const smsId = `SMS-${++SmsParsingService.smsIdCounter}`;
+
         // Process timestamp
         const timestamp = when ? new Date(Number(when)) : new Date();
         const formattedTimestamp = timestamp.toLocaleString();
 
-        // Log the SMS message
+        // Log the SMS message with ID
+        AppLogger.info(`Processing SMS ${smsId}`, {
+            smsId,
+            from,
+            timestamp: timestamp.toISOString(),
+            messageLength: sms.length,
+        });
         AppLogger.smsReceived(sms, from, timestamp.toISOString());
 
         // Parse transaction data using Gemini AI
@@ -25,8 +35,8 @@ class SmsParsingService {
             from!
         );
 
-        // Log transaction analysis
-        this.logTransactionAnalysis(transactionData);
+        // Log transaction analysis with SMS ID
+        this.logTransactionAnalysis(transactionData, smsId);
 
         // Save to Excel if it's a valid transaction with good confidence
         if (
@@ -36,11 +46,13 @@ class SmsParsingService {
         ) {
             await this.saveTransactionToExcel(
                 transactionData,
-                formattedTimestamp
+                formattedTimestamp,
+                smsId
             );
         }
 
         return {
+            smsId,
             originalSms: sms,
             sender: from || 'Unknown',
             timestamp: timestamp.toISOString(),
@@ -50,8 +62,16 @@ class SmsParsingService {
         };
     }
 
-    private logTransactionAnalysis(transactionData: TransactionData): void {
+    private logTransactionAnalysis(transactionData: TransactionData, smsId: string): void {
         if (transactionData.isTransaction) {
+            AppLogger.info(`Transaction detected for ${smsId}`, {
+                smsId,
+                amount: transactionData.amount,
+                vendor: transactionData.vendor,
+                category: transactionData.category,
+                type: transactionData.transactionType,
+                confidence: transactionData.confidence,
+            });
             AppLogger.transactionDetected({
                 amount: transactionData.amount,
                 vendor: transactionData.vendor,
@@ -60,6 +80,9 @@ class SmsParsingService {
                 confidence: transactionData.confidence,
             });
         } else {
+            AppLogger.info(`Non-transaction message for ${smsId}`, {
+                smsId,
+            });
             AppLogger.nonTransactionMessage();
         }
     }
@@ -70,11 +93,14 @@ class SmsParsingService {
 
     async saveTransactionToExcel(
         transactionData: TransactionData,
-        smsTime: string
+        smsTime: string,
+        smsId: string
     ): Promise<void> {
         try {
             if (!transactionData.isTransaction) {
-                AppLogger.info('Skipping non-transaction data for Excel save');
+                AppLogger.info(`Skipping non-transaction data for Excel save - ${smsId}`, {
+                    smsId,
+                });
                 return;
             }
 
@@ -92,10 +118,11 @@ class SmsParsingService {
             const isDuplicate = await this.checkForDuplicate(values);
             if (isDuplicate) {
                 AppLogger.warn(
-                    'Duplicate transaction detected, skipping save to Excel',
+                    `Duplicate transaction detected for ${smsId}, skipping save to Excel`,
                     {
+                        smsId,
                         amount: values.amount,
-                        timeWindow: `${Number(process.env['DUPLICATE_CHECK_WINDOW_MINUTES']) || 1} minute(s)`
+                        timeWindow: `${Number(process.env['DUPLICATE_CHECK_WINDOW_SECONDS']) || 60} second(s)`
                     }
                 );
                 return;
@@ -103,16 +130,17 @@ class SmsParsingService {
 
             await this.xlsDb.create({ values });
 
-            AppLogger.info('Transaction saved to Excel successfully', {
+            AppLogger.info(`Transaction saved to Excel successfully - ${smsId}`, {
+                smsId,
                 vendor: values.vendor,
                 amount: values.amount,
                 category: values.category,
             });
         } catch (error) {
             AppLogger.error(
-                'Failed to save transaction to Excel',
+                `Failed to save transaction to Excel - ${smsId}`,
                 error as Error,
-                { transactionData }
+                { smsId, transactionData }
             );
             throw error;
         }

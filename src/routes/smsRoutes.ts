@@ -33,7 +33,7 @@ router.post(
             }
 
             // Parse SMS using the parsing service
-            await smsParsingService.parseSms({
+            const parsedResult = await smsParsingService.parseSms({
                 sms,
                 from,
                 when,
@@ -43,6 +43,7 @@ router.post(
             return res.json({
                 status: 'ok',
                 received_sms: sms,
+                sms_id: parsedResult.smsId,
             });
         } catch (error) {
             AppLogger.requestError('POST', '/sms', error as Error);

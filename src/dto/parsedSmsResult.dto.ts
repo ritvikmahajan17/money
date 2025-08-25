@@ -2,6 +2,7 @@
 import { TransactionData } from './transactionData.dto';
 
 export interface ParsedSmsResult {
+  smsId: string;
   originalSms: string;
   sender: string;
   timestamp: string;
