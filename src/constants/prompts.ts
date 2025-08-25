@@ -1,6 +1,6 @@
 export const GEMINI_PROMPTS = {
     TRANSACTION_ANALYSIS: (smsText: string) => `
-Analyze the following SMS message and determine if it's a financial transaction. 
+Analyze the following SMS message and determine if it's a completed financial transaction. 
 If it is a transaction, extract the relevant information and return a JSON response.
 If it's not a transaction, return isTransaction: false.
 
@@ -27,6 +27,7 @@ Rules:
 6. Set confidence based on clarity of transaction indicators
 7. If date/time is not in the SMS, use null
 8. Be conservative - if unsure, mark isTransaction as false
+9. Future transactions or pending transactions requests should not be marked as transactions. Only completed transactions should be marked as transactions.
 
 Return only the JSON response, no additional text.
   `,
