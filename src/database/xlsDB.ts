@@ -30,17 +30,22 @@ export class XlsDB {
     private isDev: boolean;
 
     constructor({ sheetId, sheetName, clientEmail, privateKey }: XlsDBOptions) {
-        const devURL = 'http://localhost:5050/xlsDB';
+        const devURL = 'http://localhost:5050';
         this.isDev =
             process.env['NODE_ENV']?.toLocaleLowerCase() !== 'production';
         console.log('isDev:', this.isDev);
-        
+        console.log('XLSDB_PROD_URL:', process.env['XLSDB_PROD_URL']);
+
         if (!this.isDev && !process.env['XLSDB_PROD_URL']) {
-            throw new Error('XLSDB_PROD_URL environment variable is required for production');
+            const errorMsg =
+                'XLSDB_PROD_URL environment variable is required for production';
+            console.error('❌ ERROR:', errorMsg);
+            throw new Error(errorMsg);
         }
-        
+
         const prodURL = process.env['XLSDB_PROD_URL']!;
-        this.URL = this.isDev ? devURL : prodURL;
+        this.URL = (this.isDev ? devURL : prodURL) + '/xlsDB';
+        console.log('Using XlsDB URL:', this.URL);
         this.sheetId = sheetId;
         this.sheetName = sheetName;
         this.clientEmail =
@@ -82,6 +87,7 @@ export class XlsDB {
 
     async findAll({ where }: FindOptions): Promise<unknown[]> {
         try {
+            console.log(`${this.URL}/get-all`);
             const res = await axios.post(`${this.URL}/get-all`, {
                 where,
                 sheetId: this.sheetId,
